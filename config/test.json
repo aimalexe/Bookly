@@ -1,0 +1,11 @@
+{
+    "jwtPrivateKey": "exeCoding",
+    "PORT": 3000,
+    "db":{
+        "name": "aimalexe",
+        "password": "Y7E17dRPFF4nkeUP",
+        "dataBase": "bookly_test",
+        "db": "mongodb+srv://aimalexe:Y7E17dRPFF4nkeUP@learningcluster.ikmhi23.mongodb.net/bookly_test?retryWrites=true&w=majority"
+    }
+    
+}
