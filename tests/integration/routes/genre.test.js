@@ -1,14 +1,14 @@
 const { default: mongoose } = require("mongoose");
 const request = require("supertest");
-const { Genre } = require('../../models/genreSchema');
-const { User } = require("../../models/userSchema");
+const { Genre } = require('../../../models/genreSchema');
+const { User } = require("../../../models/userSchema");
 jest.setTimeout( 70 * 1000);
 
 let server;
 
 describe("/api/genre/", () => {
 
-    beforeEach(async ()=>{ server = await require('../../index'); })
+    beforeEach(async ()=>{ server = await require('../../../index'); })
     afterEach(async () => { 
         await server.close();
         await Genre.remove({});

@@ -1,22 +1,22 @@
 const request = require('supertest');
-const { Genre } = require('../../models/genreSchema');
-const { User } = require('../../models/userSchema');
+const { Genre } = require('../../../models/genreSchema');
+const { User } = require('../../../models/userSchema');
 
 let server;
 jest.setTimeout(50 * 1000);
 
 describe("Auth Middleware", ()=>{
     
-    beforeEach(()=>{ server = require('../../index'); });
+    beforeEach(()=>{ server = require('../../../index'); });
     afterEach(async ()=>{
-        server.close();
         await Genre.remove({});
+        server.close();
     });
 
     let token;
     const happyPath = async () => {
         return await request(server)
-            .post("/api/genre/")
+            .post("/api/genre")
             .set("x-auth-token", token)
             .send({ name: "Genre" });
     }
@@ -25,7 +25,7 @@ describe("Auth Middleware", ()=>{
     });
 
     it("Should return 401 if no token is provided", async ()=>{
-        token = "";
+        token = '';
         const res = await happyPath();
         
         expect(res.status).toBe(401);
