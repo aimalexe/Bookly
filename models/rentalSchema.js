@@ -1,6 +1,7 @@
 const Joi = require('joi');
 Joi.objectId = require('joi-objectid')(Joi);
 const mongoose = require('mongoose');
+const moment = require('moment');
 
 const rentalSchema = new mongoose.Schema({
     customer : {
@@ -55,6 +56,22 @@ const rentalSchema = new mongoose.Schema({
         min: 0
     }
 });
+
+//Defining a static method to easily search for a rental.
+rentalSchema.statics.lookup = function(customerId, bookId){
+    return this.findOne({
+        'customer._id': customerId,
+        'book._id': bookId
+    });
+}
+
+//Defining instance method for that object to set dateReturned and calculat rentalFee
+rentalSchema.methods.calcRentalFee = function(){
+    this.dateReturned = new Date();
+
+    const rentedForDays = moment().diff(this.dateOut, "days");
+    this.rentalFee = rentedForDays * this.book.dailyRentalRate;
+}
 
 function validateRental (rental){
     const rentalValidation = Joi.object({

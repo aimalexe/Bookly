@@ -1,6 +1,7 @@
 const { Book } = require('../models/bookSchema');
 const { Customer } = require('../models/customerSchema');
 const { Rental, validate } = require('../models/rentalSchema');
+const validateRequests = require('../middlewares/validateRequestsMiddleware')
 const router = require('express').Router();
 const mongoose = require('mongoose');
 const Fawn = require('fawn');
@@ -19,10 +20,7 @@ router.get("/:id", async (req, res) => {
     res.status(200).send(rentals);
 });
 
-router.post("/", async (req, res) => {
-    const { error } = validate(req.body);
-    if(error) return res.status(400).send(error.details[0].message);
-
+router.post("/", validateRequests(validate), async (req, res) => {
     const { customerId, bookId } = req.body;
 
     const customer = await Customer.findById(customerId);

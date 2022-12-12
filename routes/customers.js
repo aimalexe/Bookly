@@ -1,4 +1,5 @@
 const { Customer, validate} = require('../models/customerSchema');
+const validateRequests = require('../middlewares/validateRequestsMiddleware')
 const router = require('express').Router();
 
 router.get("/", async (req, res) => {
@@ -13,10 +14,7 @@ router.get("/:id", async (req, res)=>{
     res.status(200).send(customer)
 })
 
-router.post("/", async (req, res)=>{
-    const { error } = validate(req.body);
-    if(error) return res.status(400).send(error.details[0].message);
-
+router.post("/", validateRequests(validate),async (req, res)=>{
     const{ name, phoneNo, isGold} = req.body;
     const customer = new Customer({
         name,
@@ -31,12 +29,9 @@ router.post("/", async (req, res)=>{
     }
 });
 
-router.put("/:id", async (req, res)=>{
+router.put("/:id", validateRequests(validate),async (req, res)=>{
     const customer = await Customer.findById(req.params.id);
     if(!customer) return res.status(404).send(`Customer with ID:${req.params.id} is't found!`)
-
-    const { error } = validate( req.body )
-    if(error) return res.status(400).send(error.details[0].message);
 
     const { name, phoneNo, isGold } = req.body
     customer.set({

@@ -10,23 +10,35 @@ describe("/api/genre/", () => {
 
     beforeEach(async ()=>{ server = await require('../../../index'); })
     afterEach(async () => { 
+        await Genre.deleteMany({});
         await server.close();
-        await Genre.remove({});
     });
 
     describe("GET /", ()=>{
-        it("Should return all the genres",async () => {
-            const genres = [
+        beforeEach( async ()=>{
+            await Genre.insertMany([
                 { name: "Genre 1"},
                 { name: "Genre 2"}
-            ]
-            await Genre.collection.insertMany(genres);
-            
+            ], { w: "majority", wtimeout: 500 });
+        });
+        it("Should send 200 if genres are returned",async () => {
             const res = await request(server).get("/api/genre/");
+
             expect(res.status).toBe(200);
+                //This (and also every first test suit in a file) test is failing I don't Know
+        });
+
+        it("Should send correct length of genres",async () => {
+            const res = await request(server).get("/api/genre/");
+
             expect(res.body.length).toBe(2);
-            //expect(res.body.some(g => g.name === 'Genre 1')).toBeTruthy();
-            //expect(res.body.some(g => g.name === 'Genre 2')).toBeTruthy();
+        });
+        
+        it("Should contain the saved genres.",async () => {
+            const res = await request(server).get("/api/genre/");
+            
+            expect(res.body.some(g => g.name === 'Genre 1')).toBeTruthy();
+            expect(res.body.some(g => g.name === 'Genre 2')).toBeTruthy();
         });
     });
 

@@ -1,4 +1,5 @@
 const { Rental } = require('../../../models/rentalSchema');
+const { Book } = require('../../../models/bookSchema');
 const { User } = require('../../../models/userSchema');
 const mongoose = require('mongoose');
 const request = require('supertest');
@@ -12,6 +13,8 @@ describe("POST /api/rentals/", () => {
     let customerId;
     let bookId;
     let token;
+    let book;
+    let genreId;
 
     const happyPath = () => {
         return request(server)
@@ -19,11 +22,13 @@ describe("POST /api/rentals/", () => {
             .set("x-auth-token", token)
             .send({ customerId, bookId });
     }
+
     beforeEach( async ()=>{
         server = await require('../../../index');
 
         customerId = mongoose.Types.ObjectId();
         bookId = mongoose.Types.ObjectId();
+        genreId = mongoose.Types.ObjectId();
         token = new User().generateAuthToken();
 
         rental = new Rental({
@@ -34,19 +39,34 @@ describe("POST /api/rentals/", () => {
             },
             book:{
                 _id: bookId,
-                bookName: "123",
-                dailyRentalRate: "5"
+                bookName: "Book Name",
+                dailyRentalRate: 5
             }
         });
         await rental.save();
+
+        book = new Book({
+            _id: bookId,
+            bookName: "Book Name",
+            genre:{
+                _id: genreId,
+                name: "Genre"
+            },
+            authors: ["Writer1", "Writer2"],
+            numberInStock: 10,
+            dailyRentalRate: 5
+        });
+        await book.save();
     });
 
     afterEach( async () => { 
         await Rental.remove({});
+        await Book.remove({});
         await server.close();
     });
 
     it("Should return 401 if user is not logged in", async ()=>{
+        //This (and also every first test suit in a file) test is failing I don't Know
         token = '';
         const res = await happyPath();
 
@@ -90,39 +110,33 @@ describe("POST /api/rentals/", () => {
     });
     
     it("Should set the returnDate of valid request.", async ()=>{
-        const res = await happyPath();
+        await happyPath();
         const rentalInDb = await Rental.findOne(rental._id);
 
         const diffInDates = new Date() - rentalInDb.dateReturned;
         expect(diffInDates).toBeLessThan(10 * 1000);    //10*1000 = 10 sec.
     });
     
-    
-    it("Should increase the stock.", async ()=>{
-        //Todo this IA.
-        //setting no of days (7) using moment package
-        rental.dateOut = moment().add( -7, "days").toDate();
-        await rental.save();
-
-        const res = await happyPath();
-        const rentalInDb = await Rental.findOne(rental._id);
+    it("Should increase the stock after book is returned.", async ()=>{
+        await happyPath();
+        const bookInDb = await Book.findOne(bookId);
         
-        expect(rentalInDb.rentalFee).toBe(35); //5$ * 7days
+        expect(bookInDb.numberInStock).toBe(book.numberInStock + 1);
     });
     
+    it("Should return the rental to customer if inputs are valid.", async ()=>{
+        const res = await happyPath();
+        
+            // expect(res.body).toHaveProperty("dateOut");
+            // expect(res.body).toHaveProperty("dateReturned");
+            // expect(res.body).toHaveProperty("rentalFee");
+            // expect(res.body).toHaveProperty("customer");
+            // expect(res.body).toHaveProperty("book");
+        //Better way to implement above as:
+        expect( Object.keys(res.body) ).toEqual( expect.arrayContaining([
+            "_id", "dateOut", "dateReturned", "rentalFee", "customer", "book"
+        ]));
+    });
 //End of /api/rentals/
 });
-
-// POST /api/returns
-
-// Should return 401 if user is not logged in  --DONE
-// Should return 400 if customer id is not provided     --DONE
-// Should return 400 if book id is not provided     --DONE
-// Should return 404 if no rental found for this customer/book --DONE
-// Should return 400 if rental is already processed    --DONE
-// Should return 200 if valid request   --DONE
-// Should set the return date   --DONE
-// Should Calculate the rental fee  --DONE
-// Should  increase the stock
-// Should  return the rental
 

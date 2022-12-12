@@ -2,6 +2,7 @@ const { Genre, validate } = require('../models/genreSchema');
 const auth = require('../middlewares/authMiddleware');
 const isAdmin = require('../middlewares/isAdminMiddleware');
 const isValidId = require('../middlewares/validObjectIdMiddleware');
+const validateRequests = require('../middlewares/validateRequestsMiddleware')
 const router = require('express').Router();
 
 router.get('/', async (req, res) => {
@@ -16,20 +17,14 @@ router.get('/:id', isValidId,  async (req, res) => {
   res.status(200).send(genre);
 });
 
-router.post('/', auth, async (req, res) => {
-  const { error } = validate(req.body);
-  if (error) return res.status(400).send(error.details[0].message);
-
+router.post('/', [auth, validateRequests(validate)], async (req, res) => {
   let genre = new Genre({ name: req.body.name });
   genre = await genre.save();
 
   res.send(genre);
 });
 
-router.put('/:id', [auth, isValidId], async (req, res) => {
-  const { error } = validate(req.body);
-  if (error) return res.status(400).send(error.details[0].message);
-
+router.put('/:id', [auth, isValidId, validateRequests(validate)], async (req, res) => {
   const genre = await Genre.findByIdAndUpdate(req.params.id, 
     { name: req.body.name },
     { new: true });

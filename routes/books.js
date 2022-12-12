@@ -1,7 +1,9 @@
 const { Book, validate } = require("../models/bookSchema");
 const { Genre } = require("../models/genreSchema");
 const auth = require('../middlewares/authMiddleware');
+const validateRequests = require('../middlewares/validateRequestsMiddleware')
 const isAdmin = require('../middlewares/isAdminMiddleware');
+const isValidId = require("../middlewares/validObjectIdMiddleware");
 const router = require('express').Router();
 
 
@@ -10,13 +12,13 @@ router.get("/", async (req, res)=>{
     res.status(200).send(books);
 })
 
-router.get("/:id", async (req, res)=>{
+router.get("/:id", isValidId,async (req, res)=>{
     const book = await Book.findById(req.params.id)
     if(!book) return res.status(404).send(`Book with ID:${req.params.id} is't found!`);
     res.status(200).send(book)
-})
+});
 
-router.post("/", auth, async (req, res)=>{
+router.post("/", [auth, validateRequests(validate)], async (req, res)=>{
     const { error } = validate(req.body);
     if( error ) return res.status(400).send(error.details[0].message)
 
@@ -43,12 +45,9 @@ router.post("/", auth, async (req, res)=>{
     }
 })
 
-router.put("/:id", auth, async (req, res)=>{
+router.put("/:id", [auth, validateRequests(validate)], async (req, res)=>{
     let book = await Book.findById(req.params.id);
     if(!book) return res.status(404).send(`Book with ID:${req.params.id} is't found!`)
-
-    const { error } = validate( req.body )
-    if(error) return res.status(400).send(error.details[0].message);
 
     const { bookName, authors, genreId, numberInStock, dailyRentalRate, pages } = req.body;
     const genre = await Genre.findById(genreId);

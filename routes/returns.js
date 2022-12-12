@@ -1,27 +1,33 @@
 const { Rental } = require('../models/rentalSchema');
+const { Book } = require('../models/bookSchema');
 const auth = require('../middlewares/authMiddleware')
+const validateRequests = require('../middlewares/validateRequestsMiddleware')
 const router = require('express').Router();
-const moment = require('moment');
+const Joi = require('joi');
 
-router.post("/", auth, async (req, res) => {
-    if(!req.body.customerId) return res.status(400).send("Customer Id is not provided."); 
+router.post("/", [auth, validateRequests(validate)], async (req, res) => {
+    const rental = await Rental.lookup(req.body.customerId, req.body.bookId); //Static for Rental class
+    if (!rental) return res.status(404).send("No such rental found.");
+
+    if (rental.dateReturned) return res.status(400).send("Rental already processed.");
     
-    if(!req.body.bookId) return res.status(400).send("Book Id is not provided."); 
-    
-    const rental = await Rental.findOne({
-        'customer._id': req.body.customerId,
-        'book._id': req.body.bookId
-    });
-    if( !rental ) return res.status(404).send("No such rental found.");
-    
-    if( rental.dateReturned ) return res.status(400).send("Rental already processed.");
-    
-    rental.dateReturned = new Date();
-    const rentedForDays = moment().diff(rental.dateOut, "days");
-    rental.rentalFee =  rentedForDays * rental.book.dailyRentalRate ;
+    rental.calcRentalFee(); //Instance for Rental class
     await rental.save();
-    
-    res.status(200).send("OK!"); 
+
+    await Book.updateOne({ _id: req.body.bookId }, {
+        $inc: { numberInStock: 1 }
+    });
+
+    res.send(rental);
 });
+
+function validate(rental) {
+    const returnValidation = Joi.object({
+        customerId: Joi.objectId().required(),
+        bookId: Joi.objectId().required(),
+    });
+
+    return returnValidation.validate(rental);
+}
 
 module.exports = router;
